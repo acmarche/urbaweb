@@ -5,20 +5,23 @@ namespace AcMarche\UrbaWeb;
 
 use AcMarche\UrbaWeb\Entity\Demandeur;
 use AcMarche\UrbaWeb\Entity\Document;
+use AcMarche\UrbaWeb\Entity\Enquete;
 use AcMarche\UrbaWeb\Entity\Permis;
+use AcMarche\UrbaWeb\Entity\Projet;
 use AcMarche\UrbaWeb\Entity\TypePermis;
 use AcMarche\UrbaWeb\Entity\TypeStatut;
 use AcMarche\UrbaWeb\Repository\ApiRemoteRepository;
 use AcMarche\UrbaWeb\Tools\Cache;
 use AcMarche\UrbaWeb\Tools\Serializer;
 use AcMarche\UrbaWeb\Tools\SortUtils;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 
 class UrbaWeb
 {
     private CacheInterface $cache;
-    private const CODE_CACHE = 'urbaweb441_';
+    private const CODE_CACHE = 'urbaweb61_';
     private SerializerInterface $serializer;
     private ApiRemoteRepository $apiRemoteRepository;
 
@@ -152,7 +155,7 @@ class UrbaWeb
         );
     }
 
-    public function informationsEnquete(int $id): ?Permis
+    public function informationsEnquete(int $id): ?Enquete
     {
         return $this->cache->get(
             self::CODE_CACHE.'enquete_details_'.$id,
@@ -161,14 +164,14 @@ class UrbaWeb
 
                 return $this->serializer->deserialize(
                     $responseJson,
-                    Permis::class,
+                    Enquete::class,
                     'json'
                 );
             }
         );
     }
 
-    public function informationsProjet(int $id): ?Permis
+    public function informationsProjet(int $id): ?Projet
     {
         return $this->cache->get(
             self::CODE_CACHE.'projet_details_'.$id,
@@ -177,7 +180,7 @@ class UrbaWeb
 
                 return $this->serializer->deserialize(
                     $responseJson,
-                    Permis::class,
+                    Projet::class,
                     'json'
                 );
             }
@@ -228,18 +231,14 @@ class UrbaWeb
         );
     }
 
-    public function informationsDocument(int $id): ?Document
+    public function downloadDocument(int $id): ?Document
     {
         return $this->cache->get(
             self::CODE_CACHE.'permis_documents_'.$id,
             function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$id);
+                $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$id);
 
-                return $this->serializer->deserialize(
-                    $responseJson,
-                    Document::class,
-                    'json'
-                );
+                new BinaryFileResponse($binary);
             }
         );
     }

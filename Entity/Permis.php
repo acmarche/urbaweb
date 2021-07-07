@@ -16,4 +16,12 @@ class Permis
     public ?TypeStatut $typeStatut = null;
     public ?string $dateStatut = null;
     public ?Adresse $adresseSituation = null;
+    /**
+     * @var array|Demandeur[]
+     */
+    public array $demandeurs = [];
+    /**
+     * @var array|Document[]
+     */
+    public array $documents = [];
 }
