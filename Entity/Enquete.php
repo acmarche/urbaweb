@@ -6,7 +6,7 @@ namespace AcMarche\UrbaWeb\Entity;
 
 class Enquete
 {
-    public ?string $facultative = null;
+    public ?bool $facultative = null;
     public ?string $motifEnquete = null;
     public ?string $dateDebutAffichage = null;
     public ?string $dateEcheanceDebutAffichage = null;

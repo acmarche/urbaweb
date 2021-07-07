@@ -21,7 +21,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 class UrbaWeb
 {
     private CacheInterface $cache;
-    private const CODE_CACHE = 'urbaweb61_';
+    private const CODE_CACHE = 'urbaweb_';
     private SerializerInterface $serializer;
     private ApiRemoteRepository $apiRemoteRepository;
 
@@ -139,12 +139,12 @@ class UrbaWeb
         );
     }
 
-    public function informationsPermis(int $id): ?Permis
+    public function informationsPermis(int $permisId): ?Permis
     {
         return $this->cache->get(
-            self::CODE_CACHE.'permis_details_'.$id,
-            function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$id);
+            self::CODE_CACHE.'permis_details_'.$permisId,
+            function () use ($permisId) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$permisId);
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -155,12 +155,12 @@ class UrbaWeb
         );
     }
 
-    public function informationsEnquete(int $id): ?Enquete
+    public function informationsEnquete(int $permisId): ?Enquete
     {
         return $this->cache->get(
-            self::CODE_CACHE.'enquete_details_'.$id,
-            function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$id);
+            self::CODE_CACHE.'enquete_details_'.$permisId,
+            function () use ($permisId) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$permisId);
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -171,12 +171,12 @@ class UrbaWeb
         );
     }
 
-    public function informationsProjet(int $id): ?Projet
+    public function informationsProjet(int $permisId): ?Projet
     {
         return $this->cache->get(
-            self::CODE_CACHE.'projet_details_'.$id,
-            function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$id);
+            self::CODE_CACHE.'projet_details_'.$permisId,
+            function () use ($permisId) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$permisId);
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -188,17 +188,17 @@ class UrbaWeb
     }
 
     /**
-     * @param int $id
+     * @param int $permisId
      *
      * @return array|Demandeur[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function listDemandeursPermis(int $id): array
+    public function demandeursPermis(int $permisId): array
     {
         return $this->cache->get(
-            self::CODE_CACHE.'liste_demandeur_'.$id,
-            function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$id);
+            self::CODE_CACHE.'liste_demandeur_'.$permisId,
+            function () use ($permisId) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$permisId);
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -210,17 +210,17 @@ class UrbaWeb
     }
 
     /**
-     * @param int $id
+     * @param int $permisId
      *
      * @return array|Document[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function documentsPermis(int $id): array
+    public function documentsPermis(int $permisId): array
     {
         return $this->cache->get(
-            self::CODE_CACHE.'permis_documents_'.$id,
-            function () use ($id) {
-                $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$id);
+            self::CODE_CACHE.'permis_documents_'.$permisId,
+            function () use ($permisId) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$permisId);
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -231,16 +231,18 @@ class UrbaWeb
         );
     }
 
-    public function downloadDocument(int $id): ?Document
+    public function downloadDocument(int $permisId): ?Document
     {
         return $this->cache->get(
-            self::CODE_CACHE.'permis_documents_'.$id,
-            function () use ($id) {
-                $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$id);
+            self::CODE_CACHE.'permis_documents_'.$permisId,
+            function () use ($permisId) {
+                $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$permisId);
 
                 new BinaryFileResponse($binary);
             }
         );
     }
+
+
 
 }

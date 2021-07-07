@@ -24,4 +24,5 @@ class Permis
      * @var array|Document[]
      */
     public array $documents = [];
+    public ?Enquete $enquete = null;
 }
