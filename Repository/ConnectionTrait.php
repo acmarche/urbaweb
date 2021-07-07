@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AcMarche\UrbaWeb;
+namespace AcMarche\UrbaWeb\Repository;
 
 use AcMarche\Common\Env;
 use Symfony\Component\HttpClient\HttpClient;

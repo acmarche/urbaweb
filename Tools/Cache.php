@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AcMarche\UrbaWeb;
+namespace AcMarche\UrbaWeb\Tools;
 
 use Symfony\Component\Cache\Adapter\ApcuAdapter;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;

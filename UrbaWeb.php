@@ -3,6 +3,13 @@
 
 namespace AcMarche\UrbaWeb;
 
+use AcMarche\UrbaWeb\Entity\Person;
+use AcMarche\UrbaWeb\Entity\TypeStatut;
+use AcMarche\UrbaWeb\Repository\ConnectionTrait;
+use AcMarche\UrbaWeb\Tools\Cache;
+use AcMarche\UrbaWeb\Tools\Serializer;
+use AcMarche\UrbaWeb\Tools\SortUtils;
+use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -15,7 +22,8 @@ class UrbaWeb
     use ConnectionTrait;
 
     private CacheInterface $cache;
-    const CODE_CACHE = 'urbaweb2_';
+    private const CODE_CACHE = 'urbaweb441_';
+    private SerializerInterface $serializer;
 
     /**
      * @throws \Exception
@@ -27,6 +35,8 @@ class UrbaWeb
         if ($this->token = $this->getToken()) {
             $this->connectWithToken($this->token);
         }
+
+        $this->serializer = Serializer::create();
     }
 
     /**
@@ -75,7 +85,7 @@ class UrbaWeb
      * @throws \Exception
      * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function typesStatus(): array
+    public function statusPermis(): array
     {
         return $this->cache->get(
             self::CODE_CACHE.'typeStatus',
@@ -107,22 +117,62 @@ class UrbaWeb
         $key = implode(',', $opions);
 
         return $this->cache->get(
-            self::CODE_CACHE.'permis_details'.$key,
+            self::CODE_CACHE.'permis_details_'.$key,
             fn() => $this->requestGet('/ws/permisIDs/', $opions)
         );
+    }
+
+    public function searchAdvancePermis(array $opions = []): array
+    {
+        return $this->requestPost('/ws/permisIDs/', $opions);
     }
 
     public function informationsPermis(int $id): \stdClass
     {
         return $this->cache->get(
-            self::CODE_CACHE.'permis_details'.$id,
+            self::CODE_CACHE.'permis_details_'.$id,
             fn() => $this->requestGet('/ws/permis/'.$id)
         );
     }
 
-    public function searchAdvancePermis(array $opions = [])
+    public function informationsEnquete(int $id): \stdClass
     {
-        return $this->requestPost('/ws/permisIDs/', $opions);
+        return $this->cache->get(
+            self::CODE_CACHE.'enquete_details_'.$id,
+            fn() => $this->requestGet('/ws/enquete/'.$id)
+        );
+    }
+
+    public function informationsProjet(int $id): \stdClass
+    {
+        return $this->cache->get(
+            self::CODE_CACHE.'projet_details_'.$id,
+            fn() => $this->requestGet('/ws/annonceProjet/'.$id)
+        );
+    }
+
+    public function listDemandeursPermis(int $id): array
+    {
+        return $this->cache->get(
+            self::CODE_CACHE.'liste_demandeur_'.$id,
+            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+        );
+    }
+
+    public function documentsPermis(int $id): array
+    {
+        return $this->cache->get(
+            self::CODE_CACHE.'permis_documents_'.$id,
+            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+        );
+    }
+
+    public function informationsDocument(int $id): \stdClass
+    {
+        return $this->cache->get(
+            self::CODE_CACHE.'permis_documents_'.$id,
+            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+        );
     }
 
     /**
@@ -139,10 +189,13 @@ class UrbaWeb
                 ]
             );
 
-            $data = $this->getContent($request);
-            var_dump($url);
+            $jsonContent = $this->getContent($request);
+            var_dump($jsonContent);
 
-            return \json_decode($data);
+            $person = $this->serializer->deserialize($jsonContent, 'AcMarche\UrbaWeb\Entity\TypeStatut[]', 'json');
+            var_dump($person);
+
+            return $person;
         } catch (TransportExceptionInterface $e) {
             throw  new \Exception($e->getMessage());
         }
@@ -151,18 +204,20 @@ class UrbaWeb
     /**
      * @throws \Exception
      */
-    private function requestPost(string $url, array $options = [])
+    private function requestPost(string $url, array $parameters = [])
     {
         try {
             $request = $this->httpClient->request(
                 'POST',
                 $this->url.$url,
                 [
-                    'query' => $options,
+                    'json' => $parameters,
                 ]
             );
 
-            return $this->getContent($request);
+            $data = $this->getContent($request);
+
+            return \json_decode($data);
         } catch (TransportExceptionInterface $e) {
             throw  new \Exception($e->getMessage());
         }

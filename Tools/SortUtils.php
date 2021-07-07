@@ -1,7 +1,7 @@
 <?php
 
 
-namespace AcMarche\UrbaWeb;
+namespace AcMarche\UrbaWeb\Tools;
 
 
 class SortUtils
