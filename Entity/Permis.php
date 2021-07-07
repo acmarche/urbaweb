@@ -4,7 +4,7 @@
 namespace AcMarche\UrbaWeb\Entity;
 
 
-class Enquete
+class Permis
 {
     public ?int $id = null;
     public ?string $numeroPermis = null;

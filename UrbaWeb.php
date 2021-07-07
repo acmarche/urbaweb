@@ -3,68 +3,38 @@
 
 namespace AcMarche\UrbaWeb;
 
-use AcMarche\UrbaWeb\Entity\Person;
+use AcMarche\UrbaWeb\Entity\Demandeur;
+use AcMarche\UrbaWeb\Entity\Document;
+use AcMarche\UrbaWeb\Entity\Permis;
+use AcMarche\UrbaWeb\Entity\TypePermis;
 use AcMarche\UrbaWeb\Entity\TypeStatut;
-use AcMarche\UrbaWeb\Repository\ConnectionTrait;
+use AcMarche\UrbaWeb\Repository\ApiRemoteRepository;
 use AcMarche\UrbaWeb\Tools\Cache;
 use AcMarche\UrbaWeb\Tools\Serializer;
 use AcMarche\UrbaWeb\Tools\SortUtils;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Symfony\Contracts\HttpClient\ResponseInterface;
 
 class UrbaWeb
 {
-    use ConnectionTrait;
-
     private CacheInterface $cache;
     private const CODE_CACHE = 'urbaweb441_';
     private SerializerInterface $serializer;
+    private ApiRemoteRepository $apiRemoteRepository;
 
     /**
      * @throws \Exception
      */
     public function __construct()
     {
-        $this->cache = Cache::instance();
-        $this->connect();
-        if ($this->token = $this->getToken()) {
-            $this->connectWithToken($this->token);
-        }
-
-        $this->serializer = Serializer::create();
-    }
-
-    /**
-     * @return string|null
-     * @throws \Exception
-     */
-    public function getToken(): ?string
-    {
-        try {
-            $request = $this->httpClient->request(
-                'POST',
-                $this->url.'/authenticate',
-                [
-                    'body' =>
-                        ['username' => 'bl', 'password' => 'bl'],
-                ]
-            );
-
-            return $this->getContent($request);
-        } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
-        }
+        $this->apiRemoteRepository = new ApiRemoteRepository();
+        $this->cache               = Cache::instance();
+        $this->serializer          = Serializer::create();
     }
 
     /**
      * Liste des types de permis
-     * @return string
-     * @throws \Exception
+     * @return array|TypePermis[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function typesPermis(): array
@@ -72,17 +42,21 @@ class UrbaWeb
         return $this->cache->get(
             self::CODE_CACHE.'typePermis',
             function () {
-                $data = $this->requestGet('/ws/type-permis');
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/type-permis');
+                $types        = $this->serializer->deserialize(
+                    $responseJson,
+                    'AcMarche\UrbaWeb\Entity\TypePermis[]',
+                    'json'
+                );
 
-                return SortUtils::sortByLibelle($data);
+                return SortUtils::sortByLibelle($types);
             }
         );
     }
 
     /**
      * Liste des types de status
-     * @return string
-     * @throws \Exception
+     * @return array|TypeStatut[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function statusPermis(): array
@@ -90,9 +64,14 @@ class UrbaWeb
         return $this->cache->get(
             self::CODE_CACHE.'typeStatus',
             function () {
-                $data = $this->requestGet('/ws/statuts');
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/statuts');
+                $status       = $this->serializer->deserialize(
+                    $responseJson,
+                    'AcMarche\UrbaWeb\Entity\TypeStatut[]',
+                    'json'
+                );
 
-                return SortUtils::sortByLibelle($data);
+                return SortUtils::sortByLibelle($status);
             }
         );
     }
@@ -109,126 +88,160 @@ class UrbaWeb
      * dateStatutA (String) : Date de fin du statut
      * capakey (String) : Capakey de la parcellaire cadastrale
      * capakeyHisto (Boolean) : Historique Capakey
-     * @return string
-     * @throws \Exception
+     *
+     * @param array $options
+     *
+     * @return array|int[]
+     * @throws \Psr\Cache\InvalidArgumentException
      */
-    public function searchPermis(array $opions = []): array
+    public function searchPermis(array $options = []): array
     {
-        $key = implode(',', $opions);
+        $key = implode(',', $options);
 
         return $this->cache->get(
-            self::CODE_CACHE.'permis_details_'.$key,
-            fn() => $this->requestGet('/ws/permisIDs/', $opions)
+            self::CODE_CACHE.'permis_search_'.$key,
+            function () use ($options) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/permisIDs/', $options);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    'int[]',
+                    'json'
+                );
+            }
         );
     }
 
-    public function searchAdvancePermis(array $opions = []): array
+    /**
+     * @param array $options
+     *
+     * @return array|int[]
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
+    public function searchAdvancePermis(array $options = []): array
     {
-        return $this->requestPost('/ws/permisIDs/', $opions);
+        $key = implode(',', $options);
+
+        return $this->cache->get(
+            self::CODE_CACHE.'permis_search_advance_'.$key,
+            function () use ($options) {
+                $responseJson = $this->apiRemoteRepository->requestPost('/ws/permisIDs/', $options);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    'int[]',
+                    'json'
+                );
+            }
+        );
     }
 
-    public function informationsPermis(int $id): \stdClass
+    public function informationsPermis(int $id): ?Permis
     {
         return $this->cache->get(
             self::CODE_CACHE.'permis_details_'.$id,
-            fn() => $this->requestGet('/ws/permis/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    Permis::class,
+                    'json'
+                );
+            }
         );
     }
 
-    public function informationsEnquete(int $id): \stdClass
+    public function informationsEnquete(int $id): ?Permis
     {
         return $this->cache->get(
             self::CODE_CACHE.'enquete_details_'.$id,
-            fn() => $this->requestGet('/ws/enquete/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    Permis::class,
+                    'json'
+                );
+            }
         );
     }
 
-    public function informationsProjet(int $id): \stdClass
+    public function informationsProjet(int $id): ?Permis
     {
         return $this->cache->get(
             self::CODE_CACHE.'projet_details_'.$id,
-            fn() => $this->requestGet('/ws/annonceProjet/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    Permis::class,
+                    'json'
+                );
+            }
         );
     }
 
+    /**
+     * @param int $id
+     *
+     * @return array|Demandeur[]
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     public function listDemandeursPermis(int $id): array
     {
         return $this->cache->get(
             self::CODE_CACHE.'liste_demandeur_'.$id,
-            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    'AcMarche\UrbaWeb\Entity\Demandeur[]',
+                    'json'
+                );
+            }
         );
     }
 
+    /**
+     * @param int $id
+     *
+     * @return array|Document[]
+     * @throws \Psr\Cache\InvalidArgumentException
+     */
     public function documentsPermis(int $id): array
     {
         return $this->cache->get(
             self::CODE_CACHE.'permis_documents_'.$id,
-            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    'AcMarche\UrbaWeb\Entity\Document[]',
+                    'json'
+                );
+            }
         );
     }
 
-    public function informationsDocument(int $id): \stdClass
+    public function informationsDocument(int $id): ?Document
     {
         return $this->cache->get(
             self::CODE_CACHE.'permis_documents_'.$id,
-            fn() => $this->requestGet('/ws/demandeurs/'.$id)
+            function () use ($id) {
+                $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$id);
+
+                return $this->serializer->deserialize(
+                    $responseJson,
+                    Document::class,
+                    'json'
+                );
+            }
         );
     }
 
-    /**
-     * @throws \Exception
-     */
-    private function requestGet(string $url, array $options = [])
-    {
-        try {
-            $request = $this->httpClient->request(
-                'GET',
-                $this->url.$url,
-                [
-                    'query' => $options,
-                ]
-            );
-
-            $jsonContent = $this->getContent($request);
-            var_dump($jsonContent);
-
-            $person = $this->serializer->deserialize($jsonContent, 'AcMarche\UrbaWeb\Entity\TypeStatut[]', 'json');
-            var_dump($person);
-
-            return $person;
-        } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
-        }
-    }
-
-    /**
-     * @throws \Exception
-     */
-    private function requestPost(string $url, array $parameters = [])
-    {
-        try {
-            $request = $this->httpClient->request(
-                'POST',
-                $this->url.$url,
-                [
-                    'json' => $parameters,
-                ]
-            );
-
-            $data = $this->getContent($request);
-
-            return \json_decode($data);
-        } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
-        }
-    }
-
-    private function getContent(ResponseInterface $request): string
-    {
-        try {
-            return $request->getContent();
-        } catch (ClientExceptionInterface | TransportExceptionInterface | ServerExceptionInterface | RedirectionExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
-        }
-    }
 }
