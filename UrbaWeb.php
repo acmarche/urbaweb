@@ -176,7 +176,7 @@ class UrbaWeb
     public function informationsEnquete(int $permisId): ?Enquete
     {
         return $this->cache->get(
-            self::CODE_CACHE.'enquete_details_'.$permisId.time(),
+            self::CODE_CACHE.'enquete_details_'.$permisId,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$permisId);
                 if ( ! $responseJson) {
@@ -300,6 +300,8 @@ class UrbaWeb
 
     /**
      * Permis peut être consulté ou pas ?
+     * Statut en cours
+     * Date d'affichage non dépassée
      *
      * @param Permis $permis
      *
@@ -307,10 +309,12 @@ class UrbaWeb
      */
     public function isPublic(Permis $permis): bool
     {
-        //statut en cours
         if ($permis->statut->id > 0) {
             return false;
         }
+
+        $dateFin = $dateDebut = null;
+
         if ($enquete = $permis->enquete) {
             $dateDebut = $enquete->dateDebutAffichage;
             $dateFin   = $enquete->dateFin;
@@ -322,9 +326,10 @@ class UrbaWeb
         if ( ! $dateFin && ! $dateDebut) {
             return false;
         }
+
         $today = new \DateTime();
         if (($today >= $dateDebut) && ($today <= $dateFin)) {
-
+            return true;
         }
 
         return false;
