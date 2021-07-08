@@ -49,7 +49,7 @@ class ApiRemoteRepository
     /**
      * @throws \Exception
      */
-    public function requestGet(string $url, array $options = []): string
+    public function requestGet(string $url, array $options = []): ?string
     {
         try {
             $request = $this->httpClient->request(
@@ -70,7 +70,7 @@ class ApiRemoteRepository
     /**
      * @throws \Exception
      */
-    public function requestPost(string $url, array $parameters = []): string
+    public function requestPost(string $url, array $parameters = []): ?string
     {
         try {
             $request = $this->httpClient->request(
@@ -87,12 +87,21 @@ class ApiRemoteRepository
         }
     }
 
-    public function getContent(ResponseInterface $request): string
+    /**
+     * @throws TransportExceptionInterface
+     */
+    public function getContent(ResponseInterface $request): ?string
     {
-        try {
-            return $request->getContent();
-        } catch (ClientExceptionInterface | TransportExceptionInterface | ServerExceptionInterface | RedirectionExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
+        $statusCode = $request->getStatusCode();
+        if ($statusCode === 200) {
+            try {
+                return $request->getContent();
+            } catch (ClientExceptionInterface | TransportExceptionInterface | ServerExceptionInterface | RedirectionExceptionInterface $e) {
+                throw  new \Exception($e->getMessage());
+            }
         }
+
+        return null;
     }
+
 }

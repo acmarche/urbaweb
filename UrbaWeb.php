@@ -3,18 +3,20 @@
 
 namespace AcMarche\UrbaWeb;
 
+use AcMarche\UrbaWeb\Entity\Annonce;
 use AcMarche\UrbaWeb\Entity\Demandeur;
 use AcMarche\UrbaWeb\Entity\Document;
 use AcMarche\UrbaWeb\Entity\Enquete;
 use AcMarche\UrbaWeb\Entity\Permis;
-use AcMarche\UrbaWeb\Entity\Projet;
 use AcMarche\UrbaWeb\Entity\TypePermis;
 use AcMarche\UrbaWeb\Entity\TypeStatut;
 use AcMarche\UrbaWeb\Repository\ApiRemoteRepository;
 use AcMarche\UrbaWeb\Tools\Cache;
 use AcMarche\UrbaWeb\Tools\Serializer;
 use AcMarche\UrbaWeb\Tools\SortUtils;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Contracts\Cache\CacheInterface;
 
@@ -46,7 +48,10 @@ class UrbaWeb
             self::CODE_CACHE.'typePermis',
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/type-permis');
-                $types        = $this->serializer->deserialize(
+                if ( ! $responseJson) {
+                    return [];
+                }
+                $types = $this->serializer->deserialize(
                     $responseJson,
                     'AcMarche\UrbaWeb\Entity\TypePermis[]',
                     'json'
@@ -68,7 +73,11 @@ class UrbaWeb
             self::CODE_CACHE.'typeStatus',
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/statuts');
-                $status       = $this->serializer->deserialize(
+
+                if ( ! $responseJson) {
+                    return [];
+                }
+                $status = $this->serializer->deserialize(
                     $responseJson,
                     'AcMarche\UrbaWeb\Entity\TypeStatut[]',
                     'json'
@@ -105,6 +114,9 @@ class UrbaWeb
             self::CODE_CACHE.'permis_search_'.$key,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permisIDs/', $options);
+                if ( ! $responseJson) {
+                    return [];
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -129,6 +141,9 @@ class UrbaWeb
             self::CODE_CACHE.'permis_search_advance_'.$key,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestPost('/ws/permisIDs/', $options);
+                if ( ! $responseJson) {
+                    return [];
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -145,6 +160,9 @@ class UrbaWeb
             self::CODE_CACHE.'permis_details_'.$permisId,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$permisId);
+                if ( ! $responseJson) {
+                    return null;
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -158,9 +176,12 @@ class UrbaWeb
     public function informationsEnquete(int $permisId): ?Enquete
     {
         return $this->cache->get(
-            self::CODE_CACHE.'enquete_details_'.$permisId,
+            self::CODE_CACHE.'enquete_details_'.$permisId.time(),
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$permisId);
+                if ( ! $responseJson) {
+                    return null;
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -171,16 +192,19 @@ class UrbaWeb
         );
     }
 
-    public function informationsProjet(int $permisId): ?Projet
+    public function informationsAnnonce(int $permisId): ?Annonce
     {
         return $this->cache->get(
-            self::CODE_CACHE.'projet_details_'.$permisId,
+            self::CODE_CACHE.'annonce_details_'.$permisId,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$permisId);
+                if ( ! $responseJson) {
+                    return null;
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
-                    Projet::class,
+                    Annonce::class,
                     'json'
                 );
             }
@@ -199,6 +223,9 @@ class UrbaWeb
             self::CODE_CACHE.'liste_demandeur_'.$permisId,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$permisId);
+                if ( ! $responseJson) {
+                    return [];
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -221,6 +248,9 @@ class UrbaWeb
             self::CODE_CACHE.'permis_documents_'.$permisId,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$permisId);
+                if ( ! $responseJson) {
+                    return [];
+                }
 
                 return $this->serializer->deserialize(
                     $responseJson,
@@ -231,18 +261,73 @@ class UrbaWeb
         );
     }
 
-    public function downloadDocument(int $permisId): ?Document
+    public function downloadDocument(int $documentId): Response
     {
         return $this->cache->get(
-            self::CODE_CACHE.'permis_documents_'.$permisId,
-            function () use ($permisId) {
-                $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$permisId);
+            self::CODE_CACHE.'permis_documents_'.$documentId.time(),
+            function () use ($documentId) {
+                $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$documentId);
 
-                new BinaryFileResponse($binary);
+                $response    = new StreamedResponse();
+                $disposition = HeaderUtils::makeDisposition(
+                    HeaderUtils::DISPOSITION_ATTACHMENT,
+                    'foo.pdf'
+                );
+
+                $response->headers->set('Content-Disposition', $disposition);
+                $response->setCallback(
+                    function () use ($binary) {
+                        echo $binary;
+                    }
+                );
+                $response->send();
+
+                return $response;
             }
         );
     }
 
+    public function fullInformationsPermis(int $permisId): ?Permis
+    {
+        $permis             = $this->informationsPermis($permisId);
+        $permis->demandeurs = $this->demandeursPermis($permisId);
+        $permis->documents  = $this->documentsPermis($permisId);
+        $permis->enquete    = $this->informationsEnquete($permisId);
+        $permis->annonce    = $this->informationsAnnonce($permisId);
 
+        return $permis;
+    }
+
+    /**
+     * Permis peut être consulté ou pas ?
+     *
+     * @param Permis $permis
+     *
+     * @return bool
+     */
+    public function isPublic(Permis $permis): bool
+    {
+        //statut en cours
+        if ($permis->statut->id > 0) {
+            return false;
+        }
+        if ($enquete = $permis->enquete) {
+            $dateDebut = $enquete->dateDebutAffichage;
+            $dateFin   = $enquete->dateFin;
+        }
+        if ($annonce = $permis->annonce) {
+            $dateDebut = $annonce->dateDebutAffichage;
+            $dateFin   = $annonce->dateFinAffichage;
+        }
+        if ( ! $dateFin && ! $dateDebut) {
+            return false;
+        }
+        $today = new \DateTime();
+        if (($today >= $dateDebut) && ($today <= $dateFin)) {
+
+        }
+
+        return false;
+    }
 
 }

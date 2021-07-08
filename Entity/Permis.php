@@ -16,6 +16,8 @@ class Permis
     public ?TypeStatut $typeStatut = null;
     public ?string $dateStatut = null;
     public ?Adresse $adresseSituation = null;
+    public ?Enquete $enquete = null;
+    public ?Annonce $annonce = null;
     /**
      * @var array|Demandeur[]
      */
@@ -24,5 +26,4 @@ class Permis
      * @var array|Document[]
      */
     public array $documents = [];
-    public ?Enquete $enquete = null;
 }
