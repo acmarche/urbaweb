@@ -26,15 +26,22 @@ class UrbaWeb
     private const CODE_CACHE = 'urbaweb_';
     private SerializerInterface $serializer;
     private ApiRemoteRepository $apiRemoteRepository;
+    public bool $active_cache;
 
     /**
      * @throws \Exception
      */
-    public function __construct()
+    public function __construct(bool $active_cache = true)
     {
         $this->apiRemoteRepository = new ApiRemoteRepository();
         $this->cache               = Cache::instance();
         $this->serializer          = Serializer::create();
+        $this->active_cache        = $active_cache;
+    }
+
+    public function currentToken(): ?string
+    {
+        return $this->apiRemoteRepository->currentToken();
     }
 
     /**
@@ -44,8 +51,10 @@ class UrbaWeb
      */
     public function typesPermis(): array
     {
+        $code = $this->getCode('typePermis');
+
         return $this->cache->get(
-            self::CODE_CACHE.'typePermis',
+            $code,
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/type-permis');
                 if ( ! $responseJson) {
@@ -69,8 +78,10 @@ class UrbaWeb
      */
     public function statusPermis(): array
     {
+        $code = $this->getCode('typeStatus');
+
         return $this->cache->get(
-            self::CODE_CACHE.'typeStatus',
+            $code,
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/statuts');
 
@@ -110,8 +121,10 @@ class UrbaWeb
     {
         $key = implode(',', $options);
 
+        $code = $this->getCode('permis_search_'.$key);
+
         return $this->cache->get(
-            self::CODE_CACHE.'permis_search_'.$key,
+            $code,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permisIDs/', $options);
                 if ( ! $responseJson) {
@@ -137,8 +150,10 @@ class UrbaWeb
     {
         $key = implode(',', $options);
 
+        $code = $this->getCode('permis_search_advance'.$key);
+
         return $this->cache->get(
-            self::CODE_CACHE.'permis_search_advance_'.$key,
+            $code,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestPost('/ws/permisIDs/', $options);
                 if ( ! $responseJson) {
@@ -156,10 +171,13 @@ class UrbaWeb
 
     public function informationsPermis(int $permisId): ?Permis
     {
+        $code = $this->getCode('permis_details_'.$permisId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'permis_details_'.$permisId,
+            $code,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$permisId);
+
                 if ( ! $responseJson) {
                     return null;
                 }
@@ -175,8 +193,10 @@ class UrbaWeb
 
     public function informationsEnquete(int $permisId): ?Enquete
     {
+        $code = $this->getCode('enquete_details_'.$permisId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'enquete_details_'.$permisId,
+            $code,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$permisId);
                 if ( ! $responseJson) {
@@ -192,10 +212,12 @@ class UrbaWeb
         );
     }
 
-    public function informationsAnnonce(int $permisId): ?Annonce
+    public function informationsAnnonceProjet(int $permisId): ?Annonce
     {
+        $code = $this->getCode('annonce_details_'.$permisId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'annonce_details_'.$permisId,
+            $code,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$permisId);
                 if ( ! $responseJson) {
@@ -219,8 +241,10 @@ class UrbaWeb
      */
     public function demandeursPermis(int $permisId): array
     {
+        $code = $this->getCode('liste_demandeurs'.$permisId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'liste_demandeur_'.$permisId,
+            $code,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$permisId);
                 if ( ! $responseJson) {
@@ -244,8 +268,10 @@ class UrbaWeb
      */
     public function documentsPermis(int $permisId): array
     {
+        $code = $this->getCode('permis_documents_'.$permisId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'permis_documents_'.$permisId,
+            $code,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$permisId);
                 if ( ! $responseJson) {
@@ -263,8 +289,10 @@ class UrbaWeb
 
     public function downloadDocument(int $documentId): Response
     {
+        $code = $this->getCode('permis_document_download_'.$documentId);
+
         return $this->cache->get(
-            self::CODE_CACHE.'permis_documents_'.$documentId.time(),
+            $code,
             function () use ($documentId) {
                 $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$documentId);
 
@@ -293,7 +321,7 @@ class UrbaWeb
         $permis->demandeurs = $this->demandeursPermis($permisId);
         $permis->documents  = $this->documentsPermis($permisId);
         $permis->enquete    = $this->informationsEnquete($permisId);
-        $permis->annonce    = $this->informationsAnnonce($permisId);
+        $permis->annonce    = $this->informationsAnnonceProjet($permisId);
 
         return $permis;
     }
@@ -309,6 +337,9 @@ class UrbaWeb
      */
     public function isPublic(Permis $permis): bool
     {
+        if ( ! $permis->statut) {
+            return false;
+        }
         if ($permis->statut->id > 0) {
             return false;
         }
@@ -335,4 +366,8 @@ class UrbaWeb
         return false;
     }
 
+    private function getCode(string $key): string
+    {
+        return self::CODE_CACHE.$key.$this->active_cache ? '' : time();
+    }
 }

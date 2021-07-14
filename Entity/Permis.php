@@ -26,4 +26,28 @@ class Permis
      * @var array|Document[]
      */
     public array $documents = [];
+
+    public function dateDebutAffichage(): ?string
+    {
+        if ($this->enquete) {
+            return $this->enquete->dateDebut;
+        }
+        if ($this->annonce) {
+            return $this->annonce->dateDebutAffichage;
+        }
+
+        return null;
+    }
+
+    public function dateFinAffichage(): ?string
+    {
+        if ($this->enquete) {
+            return $this->enquete->dateFin;
+        }
+        if ($this->annonce) {
+            return $this->annonce->dateFinAffichage;
+        }
+
+        return null;
+    }
 }
