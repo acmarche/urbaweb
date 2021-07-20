@@ -9,6 +9,17 @@ Installation
 
 `composer require acmarche/urbaweb:dev-master`
 
+Configuration
+-----------------
+
+Créer les variables d'environnements:
+
+URBA_URL="https://urbaweb.domain.be/permis/app/rest"  
+URBA_USER="username"  
+URBA_PASSWORD="mdp"  
+
+en créant un fichier .env à la racine ou via votre OS
+
 Utilisation
 ----
 
