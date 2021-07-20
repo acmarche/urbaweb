@@ -12,7 +12,7 @@ Installation
 Utilisation
 ----
 
-```
+```php
 require_once 'vendor/autoload.php';
 use AcMarche\UrbaWeb\UrbaWeb;
 
@@ -24,7 +24,7 @@ $enquete = $urba->informationsEnquete($permisId);`
 ```
 Recherche par numéro
 
-```
+```php
 $numero   = 'BC2xx00xxx92';
 $ids = $urba->searchPermis(['numeroPermis' => $numero]);
 $permisId = $ids[0];
