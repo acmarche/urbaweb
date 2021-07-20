@@ -21,6 +21,9 @@ trait ConnectionTrait
     public function connect()
     {
         Env::loadEnv();
+        if (isset($_SERVER['URBA_URL'])) {
+
+        }
         $this->url      = $_ENV['URBA_URL'];
         $this->user     = $_ENV['URBA_USER'];
         $this->password = $_ENV['URBA_PASSWORD'];
