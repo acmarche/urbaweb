@@ -33,6 +33,7 @@ Utilisation
 
 ```php
 require_once 'vendor/autoload.php';
+
 use AcMarche\UrbaWeb\UrbaWeb;
 
 $urba = new UrbaWeb();
