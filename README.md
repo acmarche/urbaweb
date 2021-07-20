@@ -7,7 +7,7 @@ https://www.civadis.be/urbanisme
 Installation
 ----
 
-`composer require acmarche/urbaweb`
+`composer require acmarche/urbaweb:dev-master`
 
 Utilisation
 ----
