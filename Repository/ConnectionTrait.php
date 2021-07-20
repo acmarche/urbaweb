@@ -20,10 +20,7 @@ trait ConnectionTrait
 
     public function connect()
     {
-        Env::loadEnv();
-        if (isset($_SERVER['URBA_URL'])) {
-
-        }
+        self::loadEnv();
         $this->url      = $_ENV['URBA_URL'];
         $this->user     = $_ENV['URBA_USER'];
         $this->password = $_ENV['URBA_PASSWORD'];
@@ -37,7 +34,7 @@ trait ConnectionTrait
 
     public function connectWithToken(string $token)
     {
-        Env::loadEnv();
+        self::loadEnv();
         $this->url = $_ENV['URBA_URL'];
 
         $options = new HttpOptions();
@@ -45,5 +42,8 @@ trait ConnectionTrait
         $this->httpClient = HttpClient::createForBaseUri($this->url, $options->toArray());
     }
 
-
+    private function loadEnv()
+    {
+        Env::loadEnv();
+    }
 }

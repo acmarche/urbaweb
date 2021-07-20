@@ -11,9 +11,9 @@ class Env
         $dotenv = new Dotenv();
         $dir    = getcwd();
         try {
-            $dotenv->load($dir.'/.env');
+            $dotenv->bootEnv($dir.'/.env');
         } catch (\Exception $exception) {
-            echo "error load env: ".$exception->getMessage();
+            echo "Error load env: ".$exception->getMessage();
         }
     }
 

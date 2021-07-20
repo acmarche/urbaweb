@@ -12,13 +12,14 @@ Installation
 Configuration
 -----------------
 
-Créer les variables d'environnements:
+###Définir les variables d'environnements:
 
 URBA_URL="https://urbaweb.domain.be/permis/app/rest"  
 URBA_USER="username"  
 URBA_PASSWORD="mdp"  
 
-en créant un fichier .env à la racine ou via votre OS
+En créant un fichier .env.local.php à la racine de votre installation ou
+via les variables d'environnment de votre système d'exploitation
 
 Utilisation
 ----
