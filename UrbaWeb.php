@@ -26,17 +26,14 @@ class UrbaWeb
     private const CODE_CACHE = 'urbaweb_';
     private SerializerInterface $serializer;
     private ApiRemoteRepository $apiRemoteRepository;
-    public bool $active_cache;
+    public bool $activeCache;
 
-    /**
-     * @throws \Exception
-     */
-    public function __construct(bool $active_cache = true)
+    public function __construct(bool $activeCache = true)
     {
         $this->apiRemoteRepository = new ApiRemoteRepository();
         $this->cache               = Cache::instance();
         $this->serializer          = Serializer::create();
-        $this->active_cache        = $active_cache;
+        $this->activeCache         = $activeCache;
     }
 
     public function currentToken(): ?string
@@ -51,10 +48,10 @@ class UrbaWeb
      */
     public function typesPermis(): array
     {
-        $code = $this->getCode('typePermis');
+        $cacheKey = $this->getCacheKey('typePermis');
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/type-permis');
                 if ( ! $responseJson) {
@@ -78,10 +75,10 @@ class UrbaWeb
      */
     public function statusPermis(): array
     {
-        $code = $this->getCode('typeStatus');
+        $cacheKey = $this->getCacheKey('typeStatus');
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/statuts');
 
@@ -121,10 +118,10 @@ class UrbaWeb
     {
         $key = implode(',', $options);
 
-        $code = $this->getCode('permis_search_'.$key);
+        $cacheKey = $this->getCacheKey('permis_search_'.$key);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permisIDs/', $options);
                 if ( ! $responseJson) {
@@ -148,11 +145,11 @@ class UrbaWeb
      */
     public function searchAdvancePermis(array $options = []): array
     {
-        $key  = implode(',', $options);
-        $code = $this->getCode('permis_search_advance'.$key);
+        $key      = implode(',', $options);
+        $cacheKey = $this->getCacheKey('permis_search_advance'.$key);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($options) {
                 $responseJson = $this->apiRemoteRepository->requestPost('/ws/permisIDs/', $options);
                 if ( ! $responseJson) {
@@ -170,10 +167,10 @@ class UrbaWeb
 
     public function informationsPermis(int $permisId): ?Permis
     {
-        $code = $this->getCode('permis_details_'.$permisId);
+        $cacheKey = $this->getCacheKey('permis_details_'.$permisId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/permis/'.$permisId);
 
@@ -181,25 +178,21 @@ class UrbaWeb
                     return null;
                 }
 
-                $t = $this->serializer->deserialize(
+                return $this->serializer->deserialize(
                     $responseJson,
                     Permis::class,
                     'json'
                 );
-
-                // dd($t);
-
-                return $t;
             }
         );
     }
 
     public function informationsEnquete(int $permisId): ?Enquete
     {
-        $code = $this->getCode('enquete_details_'.$permisId);
+        $cacheKey = $this->getCacheKey('enquete_details_'.$permisId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/enquete/'.$permisId);
                 if ( ! $responseJson) {
@@ -217,10 +210,10 @@ class UrbaWeb
 
     public function informationsAnnonceProjet(int $permisId): ?Annonce
     {
-        $code = $this->getCode('annonce_details_'.$permisId);
+        $cacheKey = $this->getCacheKey('annonce_details_'.$permisId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/annonceProjet/'.$permisId);
                 if ( ! $responseJson) {
@@ -244,10 +237,10 @@ class UrbaWeb
      */
     public function demandeursPermis(int $permisId): array
     {
-        $code = $this->getCode('liste_demandeurs'.$permisId);
+        $cacheKey = $this->getCacheKey('liste_demandeurs'.$permisId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/demandeurs/'.$permisId);
                 if ( ! $responseJson) {
@@ -271,10 +264,10 @@ class UrbaWeb
      */
     public function documentsPermis(int $permisId): array
     {
-        $code = $this->getCode('permis_documents_'.$permisId);
+        $cacheKey = $this->getCacheKey('permis_documents_'.$permisId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($permisId) {
                 $responseJson = $this->apiRemoteRepository->requestGet('/ws/documents/'.$permisId);
                 if ( ! $responseJson) {
@@ -292,10 +285,10 @@ class UrbaWeb
 
     public function downloadDocument(int $documentId): Response
     {
-        $code = $this->getCode('permis_document_download_'.$documentId);
+        $cacheKey = $this->getCacheKey('permis_document_download_'.$documentId);
 
         return $this->cache->get(
-            $code,
+            $cacheKey,
             function () use ($documentId) {
                 $binary = $this->apiRemoteRepository->requestGet('/ws/document/'.$documentId);
 
@@ -338,7 +331,7 @@ class UrbaWeb
      *
      * @return bool
      */
-    public function isPublic(Permis $permis): bool
+    public function isPublic(Permis $permis, ?\DateTimeInterface $today = null): bool
     {
         $dateFin = $dateDebut = null;
 
@@ -358,17 +351,14 @@ class UrbaWeb
             return false;
         }
 
-
         if ( ! $dateFin && ! $dateDebut) {
             return false;
         }
 
-        $today = new \DateTime();
-        /**
-         * 2021-07-15
-         * ^ "2021-07-26"
-         * ^ "2021-07-05"
-         */
+        if ( ! $today) {
+            $today = new \DateTime();
+        }
+
         if (($today->format('Y-m-d') >= $dateDebut) && ($today->format('Y-m-d') <= $dateFin)) {
             return true;
         }
@@ -376,9 +366,9 @@ class UrbaWeb
         return false;
     }
 
-    private function getCode(string $key): string
+    private function getCacheKey(string $key): string
     {
-        if ( ! $this->active_cache) {
+        if ( ! $this->activeCache) {
             return self::CODE_CACHE.rand(0, 10000).time();
         }
 
