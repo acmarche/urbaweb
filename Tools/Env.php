@@ -9,7 +9,7 @@ class Env
     public static function loadEnv(): void
     {
         $dotenv = new Dotenv();
-        $dir    = self::getProjectDir();
+        $dir    = getcwd();
         try {
             $dotenv->load($dir.'/.env');
         } catch (\Exception $exception) {
