@@ -3,10 +3,9 @@
 
 namespace AcMarche\UrbaWeb\Repository;
 
-use AcMarche\Common\Env;
+use AcMarche\UrbaWeb\Tools\Env;
 use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\HttpOptions;
-use Symfony\Component\HttpClient\ScopingHttpClient;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 trait ConnectionTrait
