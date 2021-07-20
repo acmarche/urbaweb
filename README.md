@@ -20,7 +20,7 @@ $urba = new UrbaWeb();
 $permisId = 1234;
 $permis  = $urba->informationsPermis($permisId);
 $annonce = $urba->informationsAnnonceProjet($permisId);
-$enquete = $urba->informationsEnquete($permisId);`
+$enquete = $urba->informationsEnquete($permisId);
 ```
 Recherche par numéro
 
