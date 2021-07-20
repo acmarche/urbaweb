@@ -14,7 +14,7 @@ Configuration
 
 ###  Définir les variables d'environnements:
 
-En créant un fichier .env.local.php à la racine de votre installation ou
+En créant un fichier .env.local.php à la racine de votre installation ou  
 via les variables d'environnment de votre système d'exploitation
 
 ```php
