@@ -24,6 +24,11 @@ class ApiRemoteRepository
         }
     }
 
+    public function currentToken(): ?string
+    {
+        return $this->token;
+    }
+
     /**
      * @return string|null
      * @throws \Exception

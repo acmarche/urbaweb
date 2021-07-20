@@ -9,6 +9,8 @@ class Permis
     public ?int $id = null;
     public ?string $numeroPermis = null;
     public ?string $numeroPermisDelivre = null;
+    public ?string $natureTexteLibre = null;
+    public ?string $urbain = null;
     public ?TypePermis $typePermis = null;
     public ?string $dateRecepisse = null;
     public ?Nature $nature = null;

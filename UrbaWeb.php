@@ -46,7 +46,7 @@ class UrbaWeb
 
     /**
      * Liste des types de permis
-     * @return array|TypePermis[]
+     * @return TypePermis[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function typesPermis(): array
@@ -73,7 +73,7 @@ class UrbaWeb
 
     /**
      * Liste des types de status
-     * @return array|TypeStatut[]
+     * @return TypeStatut[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function statusPermis(): array
@@ -114,7 +114,7 @@ class UrbaWeb
      *
      * @param array $options
      *
-     * @return array|int[]
+     * @return int[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function searchPermis(array $options = []): array
@@ -143,13 +143,12 @@ class UrbaWeb
     /**
      * @param array $options
      *
-     * @return array|int[]
+     * @return int[]
      * @throws \Psr\Cache\InvalidArgumentException
      */
     public function searchAdvancePermis(array $options = []): array
     {
-        $key = implode(',', $options);
-
+        $key  = implode(',', $options);
         $code = $this->getCode('permis_search_advance'.$key);
 
         return $this->cache->get(
@@ -182,11 +181,15 @@ class UrbaWeb
                     return null;
                 }
 
-                return $this->serializer->deserialize(
+                $t = $this->serializer->deserialize(
                     $responseJson,
                     Permis::class,
                     'json'
                 );
+
+                // dd($t);
+
+                return $t;
             }
         );
     }
@@ -337,13 +340,6 @@ class UrbaWeb
      */
     public function isPublic(Permis $permis): bool
     {
-        if ( ! $permis->statut) {
-            return false;
-        }
-        if ($permis->statut->id > 0) {
-            return false;
-        }
-
         $dateFin = $dateDebut = null;
 
         if ($enquete = $permis->enquete) {
@@ -354,12 +350,26 @@ class UrbaWeb
             $dateDebut = $annonce->dateDebutAffichage;
             $dateFin   = $annonce->dateFinAffichage;
         }
+
+        if ( ! $permis->statut) {
+            return false;
+        }
+        if ($permis->statut->id > 0) {
+            return false;
+        }
+
+
         if ( ! $dateFin && ! $dateDebut) {
             return false;
         }
 
         $today = new \DateTime();
-        if (($today >= $dateDebut) && ($today <= $dateFin)) {
+        /**
+         * 2021-07-15
+         * ^ "2021-07-26"
+         * ^ "2021-07-05"
+         */
+        if (($today->format('Y-m-d') >= $dateDebut) && ($today->format('Y-m-d') <= $dateFin)) {
             return true;
         }
 
@@ -368,6 +378,10 @@ class UrbaWeb
 
     private function getCode(string $key): string
     {
-        return self::CODE_CACHE.$key.$this->active_cache ? '' : time();
+        if ( ! $this->active_cache) {
+            return self::CODE_CACHE.rand(0, 10000).time();
+        }
+
+        return self::CODE_CACHE.$key;
     }
 }
