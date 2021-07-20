@@ -10,9 +10,9 @@ class Env
     {
         $dotenv = new Dotenv();
         try {
-            $dotenv->load(ABSPATH . '.env');
+            $dotenv->load(__DIR__.'/.env');
         } catch (\Exception $exception) {
-            echo "error load env: " . $exception->getMessage();
+            echo "error load env: ".$exception->getMessage();
         }
     }
 }
