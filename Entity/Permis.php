@@ -31,10 +31,10 @@ class Permis
 
     public function dateDebutAffichage(): ?string
     {
-        if ($this->enquete) {
+        if ($this->enquete !== null) {
             return $this->enquete->dateDebut;
         }
-        if ($this->annonce) {
+        if ($this->annonce !== null) {
             return $this->annonce->dateDebutAffichage;
         }
 
@@ -43,10 +43,10 @@ class Permis
 
     public function dateFinAffichage(): ?string
     {
-        if ($this->enquete) {
+        if ($this->enquete !== null) {
             return $this->enquete->dateFin;
         }
-        if ($this->annonce) {
+        if ($this->annonce !== null) {
             return $this->annonce->dateFinAffichage;
         }
 

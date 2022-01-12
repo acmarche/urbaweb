@@ -3,6 +3,9 @@
 
 namespace AcMarche\UrbaWeb;
 
+use Psr\Cache\InvalidArgumentException;
+use DateTimeInterface;
+use DateTime;
 use AcMarche\UrbaWeb\Entity\Annonce;
 use AcMarche\UrbaWeb\Entity\Demandeur;
 use AcMarche\UrbaWeb\Entity\Document;
@@ -26,14 +29,12 @@ class UrbaWeb
     private const CODE_CACHE = 'urbaweb_';
     private SerializerInterface $serializer;
     private ApiRemoteRepository $apiRemoteRepository;
-    public bool $activeCache;
 
-    public function __construct(bool $activeCache = true)
+    public function __construct(public bool $activeCache = true)
     {
         $this->apiRemoteRepository = new ApiRemoteRepository();
         $this->cache               = Cache::instance();
         $this->serializer          = Serializer::create();
-        $this->activeCache         = $activeCache;
     }
 
     public function currentToken(): ?string
@@ -44,7 +45,7 @@ class UrbaWeb
     /**
      * Liste des types de permis
      * @return TypePermis[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function typesPermis(): array
     {
@@ -71,7 +72,7 @@ class UrbaWeb
     /**
      * Liste des types de status
      * @return TypeStatut[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function statusPermis(): array
     {
@@ -109,10 +110,9 @@ class UrbaWeb
      * capakey (String) : Capakey de la parcellaire cadastrale
      * capakeyHisto (Boolean) : Historique Capakey
      *
-     * @param array $options
      *
      * @return int[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function searchPermis(array $options = []): array
     {
@@ -138,10 +138,9 @@ class UrbaWeb
     }
 
     /**
-     * @param array $options
      *
      * @return int[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function searchAdvancePermis(array $options = []): array
     {
@@ -230,10 +229,9 @@ class UrbaWeb
     }
 
     /**
-     * @param int $permisId
      *
      * @return array|Demandeur[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function demandeursPermis(int $permisId): array
     {
@@ -257,10 +255,9 @@ class UrbaWeb
     }
 
     /**
-     * @param int $permisId
      *
      * @return array|Document[]
-     * @throws \Psr\Cache\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function documentsPermis(int $permisId): array
     {
@@ -327,24 +324,22 @@ class UrbaWeb
      * Statut en cours
      * Date d'affichage non dépassée
      *
-     * @param Permis $permis
      *
-     * @return bool
      */
-    public function isPublic(Permis $permis, ?\DateTimeInterface $today = null): bool
+    public function isPublic(Permis $permis, ?DateTimeInterface $today = null): bool
     {
         $dateFin = $dateDebut = null;
 
-        if ($enquete = $permis->enquete) {
+        if (($enquete = $permis->enquete) !== null) {
             $dateDebut = $enquete->dateDebutAffichage;
             $dateFin   = $enquete->dateFin;
         }
-        if ($annonce = $permis->annonce) {
+        if (($annonce = $permis->annonce) !== null) {
             $dateDebut = $annonce->dateDebutAffichage;
             $dateFin   = $annonce->dateFinAffichage;
         }
 
-        if ( ! $permis->statut) {
+        if ( $permis->statut === null) {
             return false;
         }
         if ($permis->statut->id > 0) {
@@ -355,21 +350,16 @@ class UrbaWeb
             return false;
         }
 
-        if ( ! $today) {
-            $today = new \DateTime();
+        if ( $today === null) {
+            $today = new DateTime();
         }
-
-        if (($today->format('Y-m-d') >= $dateDebut) && ($today->format('Y-m-d') <= $dateFin)) {
-            return true;
-        }
-
-        return false;
+        return ($today->format('Y-m-d') >= $dateDebut) && ($today->format('Y-m-d') <= $dateFin);
     }
 
     private function getCacheKey(string $key): string
     {
         if ( ! $this->activeCache) {
-            return self::CODE_CACHE.rand(0, 10000).time();
+            return self::CODE_CACHE.random_int(0, 10000).time();
         }
 
         return self::CODE_CACHE.$key;

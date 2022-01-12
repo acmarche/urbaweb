@@ -3,6 +3,7 @@
 
 namespace AcMarche\UrbaWeb\Repository;
 
+use Exception;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
@@ -14,7 +15,7 @@ class ApiRemoteRepository
     use ConnectionTrait;
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function __construct()
     {
@@ -30,8 +31,7 @@ class ApiRemoteRepository
     }
 
     /**
-     * @return string|null
-     * @throws \Exception
+     * @throws Exception
      */
     public function getToken(): ?string
     {
@@ -47,12 +47,12 @@ class ApiRemoteRepository
 
             return $this->getContent($request);
         } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
+            throw  new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function requestGet(string $url, array $options = []): ?string
     {
@@ -68,12 +68,12 @@ class ApiRemoteRepository
             return $this->getContent($request);
 
         } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
+            throw  new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function requestPost(string $url, array $parameters = []): ?string
     {
@@ -88,7 +88,7 @@ class ApiRemoteRepository
 
             return $this->getContent($request);
         } catch (TransportExceptionInterface $e) {
-            throw  new \Exception($e->getMessage());
+            throw  new Exception($e->getMessage(), $e->getCode(), $e);
         }
     }
 
@@ -102,7 +102,7 @@ class ApiRemoteRepository
             try {
                 return $request->getContent();
             } catch (ClientExceptionInterface | TransportExceptionInterface | ServerExceptionInterface | RedirectionExceptionInterface $e) {
-                throw  new \Exception($e->getMessage());
+                throw  new Exception($e->getMessage(), $e->getCode(), $e);
             }
         }
 

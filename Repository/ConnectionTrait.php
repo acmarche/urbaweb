@@ -16,7 +16,7 @@ trait ConnectionTrait
     private string $clef;
     private string $user;
     private string $password;
-    private ?string $token;
+    private ?string $token = null;
 
     public function connect()
     {

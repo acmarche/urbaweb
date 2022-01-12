@@ -2,6 +2,9 @@
 
 namespace AcMarche\UrbaWeb\Tools;
 
+use Exception;
+use ReflectionObject;
+use LogicException;
 use Symfony\Component\Dotenv\Dotenv;
 
 class Env
@@ -12,17 +15,17 @@ class Env
         $dir    = getcwd();
         try {
             $dotenv->bootEnv($dir.'/.env');
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             echo "Error load env: ".$exception->getMessage();
         }
     }
 
     public static function getProjectDir(): string
     {
-        $r = new \ReflectionObject(new self());
+        $r = new ReflectionObject(new self());
 
         if ( ! is_file($dir = $r->getFileName())) {
-            throw new \LogicException(
+            throw new LogicException(
                 sprintf('Cannot auto-detect project dir for kernel of class "%s".', $r->name)
             );
         }

@@ -55,7 +55,7 @@ class Cache
         return self::$instanceObject;
     }
 
-    public static function refresh(string $code)
+    public static function refresh(string $code): void
     {
         $request = Request::createFromGlobals();
         $refresh = $request->get('refresh', null);
