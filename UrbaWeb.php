@@ -359,7 +359,7 @@ class UrbaWeb
     private function getCacheKey(string $key): string
     {
         if ( ! $this->activeCache) {
-            return self::CODE_CACHE.random_int(0, 10000).time();
+            return self::CODE_CACHE.random_int(0, 10000);
         }
 
         return self::CODE_CACHE.$key;
